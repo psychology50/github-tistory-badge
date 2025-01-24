@@ -16,10 +16,10 @@ export async function crawlBlog(name: string): Promise<BlogPost[]> {
 
         $('.post').slice(0, 4).each((_, element) => {
             const $post = $(element);
-            const link = $post.find('a.title').attr('href') || '';
+            const link = $post.find('a.link').attr('href') || '';
             
             const post: BlogPost = {
-                title: $post.find('a.title').text(),
+                title: $post.find('div.tit').text(),
                 url: link.startsWith('http') ? link : `${url}${link}`,
                 date: $post.find('.date').text(),
                 category: $post.find('.category').text(),
