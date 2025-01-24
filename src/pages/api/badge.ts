@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { crawlBlog } from '../../lib/crawler';
-import { getCachedPosts, cachePosts } from '../../lib/cache';
 import { generateBadge, generateErrorBadge } from '../../lib/badge';
 import { Theme } from '../../lib/types';
 
@@ -16,13 +15,7 @@ function validateRequest(req: NextApiRequest): { name: string; theme: Theme } | 
 }
 
 async function handleBadgeGeneration(name: string, theme: Theme) {
-  const cached = await getCachedPosts(name);
-  if (cached) {
-    return generateBadge(cached, theme);
-  }
-  
   const posts = await crawlBlog(name);
-  await cachePosts(name, posts);
   return generateBadge(posts, theme);
 }
 
@@ -41,7 +34,7 @@ export default async function handler(
     const svg = await handleBadgeGeneration(name, theme);
     
     res.setHeader('Content-Type', 'image/svg+xml');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate');
     res.send(svg);
     
   } catch (error) {
