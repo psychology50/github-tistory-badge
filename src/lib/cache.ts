@@ -14,7 +14,7 @@ export async function getCachedPosts(blogName: string): Promise<BlogPost[] | nul
 
 export async function cachePosts(blogName: string, posts: BlogPost[]): Promise<void> {
     try {
-        await kv.set(`blog-posts:${blogName}`, posts, { expirationTtl: CACHE_TTL });
+        await kv.set(`blog-posts:${blogName}`, posts, { ex: CACHE_TTL });
     } catch (error) {
         console.error("❌ 캐시 데이터 저장 오류: ", error);
     }
