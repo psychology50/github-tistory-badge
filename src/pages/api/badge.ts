@@ -4,37 +4,48 @@ import { getCachedPosts, cachePosts } from '../../lib/cache';
 import { generateBadge, generateErrorBadge } from '../../lib/badge';
 import { Theme } from '../../lib/types';
 
+function validateRequest(req: NextApiRequest): { name: string; theme: Theme } | null {
+  if (req.method !== 'GET') return null;
+
+  const name = req.query.name as string;
+  const theme = (req.query.theme as Theme) || 'default';
+  
+  if (!name || Array.isArray(name)) return null;
+  
+  return { name, theme };
+}
+
+async function handleBadgeGeneration(name: string, theme: Theme) {
+  const cached = await getCachedPosts(name);
+  if (cached) {
+    return generateBadge(cached, theme);
+  }
+  
+  const posts = await crawlBlog(name);
+  await cachePosts(name, posts);
+  return generateBadge(posts, theme);
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  if (req.method !== 'GET') {
-    return res.status(405).end('Method not allowed');
-  }
-
-  const { name, theme = 'default' } = req.query;
-  
-  if (!name || Array.isArray(name)) {
-    return res.status(400).send(generateErrorBadge());
-  }
-
   try {
-    const cached = await getCachedPosts(name);
-    if (cached) {
+    const validation = validateRequest(req);
+    if (!validation) {
       res.setHeader('Content-Type', 'image/svg+xml');
-      return res.send(generateBadge(cached, theme as Theme));
+      return res.status(400).send(generateErrorBadge());
     }
     
-    const posts = await crawlBlog(name);
-    
-    await cachePosts(name, posts);
+    const { name, theme } = validation;
+    const svg = await handleBadgeGeneration(name, theme);
     
     res.setHeader('Content-Type', 'image/svg+xml');
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.send(generateBadge(posts, theme as Theme));
+    res.send(svg);
     
   } catch (error) {
-    console.error('❌ 오류 발생:', error);
+    console.error('뱃지 생성 중 ❌ 오류 발생:', error);
     res.setHeader('Content-Type', 'image/svg+xml');
     res.status(500).send(generateErrorBadge());
   }
