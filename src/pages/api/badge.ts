@@ -34,7 +34,7 @@ export default async function handler(
     const svg = await handleBadgeGeneration(name, theme);
     
     res.setHeader('Content-Type', 'image/svg+xml');
-    res.setHeader('Cache-Control', 'public, s-maxage=3600');
+    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
     res.send(svg);
     
   } catch (error) {
